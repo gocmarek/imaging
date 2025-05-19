@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/chai2010/webp"
 	"golang.org/x/image/bmp"
 	"golang.org/x/image/tiff"
 )
@@ -91,7 +92,6 @@ func Decode(r io.Reader, opts ...DecodeOption) (image.Image, error) {
 //
 //	// Load an image and transform it depending on the EXIF orientation tag (if present).
 //	img, err := imaging.Open("test.jpg", imaging.AutoOrientation(true))
-//
 func Open(filename string, opts ...DecodeOption) (image.Image, error) {
 	file, err := fs.Open(filename)
 	if err != nil {
@@ -111,6 +111,7 @@ const (
 	GIF
 	TIFF
 	BMP
+	WEBP
 )
 
 var formatExts = map[string]Format{
@@ -121,6 +122,7 @@ var formatExts = map[string]Format{
 	"tif":  TIFF,
 	"tiff": TIFF,
 	"bmp":  BMP,
+	"webp": WEBP,
 }
 
 var formatNames = map[Format]string{
@@ -129,6 +131,7 @@ var formatNames = map[Format]string{
 	GIF:  "GIF",
 	TIFF: "TIFF",
 	BMP:  "BMP",
+	WEBP: "WEBP",
 }
 
 func (f Format) String() string {
@@ -160,6 +163,9 @@ type encodeConfig struct {
 	gifQuantizer        draw.Quantizer
 	gifDrawer           draw.Drawer
 	pngCompressionLevel png.CompressionLevel
+	webpQuality         int
+	saveAllAsWebp       bool
+	webpLossless        bool
 }
 
 var defaultEncodeConfig = encodeConfig{
@@ -168,6 +174,9 @@ var defaultEncodeConfig = encodeConfig{
 	gifQuantizer:        nil,
 	gifDrawer:           nil,
 	pngCompressionLevel: png.DefaultCompression,
+	webpQuality:         80,
+	saveAllAsWebp:       false,
+	webpLossless:        false,
 }
 
 // EncodeOption sets an optional parameter for the Encode and Save functions.
@@ -213,6 +222,30 @@ func PNGCompressionLevel(level png.CompressionLevel) EncodeOption {
 	}
 }
 
+/*
+	webpQuality         int
+	saveAllAsWebp       bool
+	webpLossless        bool
+*/
+
+func WebpQuality(level int) EncodeOption {
+	return func(c *encodeConfig) {
+		c.webpQuality = level
+	}
+}
+
+func SaveAllAsWebp(saveall bool) EncodeOption {
+	return func(c *encodeConfig) {
+		c.saveAllAsWebp = saveall
+	}
+}
+
+func WebpLossless(lossless bool) EncodeOption {
+	return func(c *encodeConfig) {
+		c.webpLossless = lossless
+	}
+}
+
 // Encode writes the image img to w in the specified format (JPEG, PNG, GIF, TIFF or BMP).
 func Encode(w io.Writer, img image.Image, format Format, opts ...EncodeOption) error {
 	cfg := defaultEncodeConfig
@@ -228,12 +261,18 @@ func Encode(w io.Writer, img image.Image, format Format, opts ...EncodeOption) e
 				Stride: nrgba.Stride,
 				Rect:   nrgba.Rect,
 			}
+			if cfg.saveAllAsWebp {
+				return webp.Encode(w, img, &webp.Options{Quality: float32(cfg.webpQuality), Lossless: cfg.webpLossless})
+			}
 			return jpeg.Encode(w, rgba, &jpeg.Options{Quality: cfg.jpegQuality})
 		}
 		return jpeg.Encode(w, img, &jpeg.Options{Quality: cfg.jpegQuality})
 
 	case PNG:
 		encoder := png.Encoder{CompressionLevel: cfg.pngCompressionLevel}
+		if cfg.saveAllAsWebp {
+			return webp.Encode(w, img, &webp.Options{Quality: float32(cfg.webpQuality), Lossless: cfg.webpLossless})
+		}
 		return encoder.Encode(w, img)
 
 	case GIF:
@@ -244,10 +283,18 @@ func Encode(w io.Writer, img image.Image, format Format, opts ...EncodeOption) e
 		})
 
 	case TIFF:
+		if cfg.saveAllAsWebp {
+			return webp.Encode(w, img, &webp.Options{Quality: float32(cfg.webpQuality), Lossless: cfg.webpLossless})
+		}
 		return tiff.Encode(w, img, &tiff.Options{Compression: tiff.Deflate, Predictor: true})
 
 	case BMP:
+		if cfg.saveAllAsWebp {
+			return webp.Encode(w, img, &webp.Options{Quality: float32(cfg.webpQuality), Lossless: cfg.webpLossless})
+		}
 		return bmp.Encode(w, img)
+	case WEBP:
+		return webp.Encode(w, img, &webp.Options{Quality: float32(cfg.webpQuality), Lossless: cfg.webpLossless})
 	}
 
 	return ErrUnsupportedFormat
@@ -264,7 +311,6 @@ func Encode(w io.Writer, img image.Image, format Format, opts ...EncodeOption) e
 //
 //	// Save the image as JPEG with optional quality parameter set to 80.
 //	err := imaging.Save(img, "out.jpg", imaging.JPEGQuality(80))
-//
 func Save(img image.Image, filename string, opts ...EncodeOption) (err error) {
 	f, err := FormatFromFilename(filename)
 	if err != nil {

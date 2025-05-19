@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -60,6 +61,38 @@ func (q quantizer) Quantize(p color.Palette, m image.Image) color.Palette {
 	return pal
 }
 
+func TestDecodeAndEncodeWebP(t *testing.T) {
+	srcDir := path.Join("./", "testdata")
+	trgDir := path.Join(os.TempDir(), "testdata", "webp")
+
+	dir, err := os.ReadDir(srcDir)
+	if err != nil {
+		t.Fatal("Failed to read test data directory")
+	}
+
+	err = os.MkdirAll(trgDir, 0755)
+	if err != nil {
+		t.Fatal("Failed to create target test data directory: " + trgDir)
+	}
+	defer os.RemoveAll(trgDir)
+
+	for _, f := range dir {
+		if !f.IsDir() && filepath.Ext(f.Name()) == ".png" || filepath.Ext(f.Name()) == ".jpg" {
+			img, err := Open(path.Join(srcDir, f.Name()), []DecodeOption{}...)
+			if err != nil {
+				t.Fatal("Failed to decode image: " + f.Name())
+			}
+
+			ext := filepath.Ext(f.Name())
+			filename := strings.TrimSuffix(f.Name(), ext) + ".webp"
+			err = Save(img, path.Join(trgDir, filename))
+			if err != nil {
+				t.Fatal("Failed to encode and save image: " + f.Name())
+			}
+		}
+	}
+}
+
 func TestOpenSave(t *testing.T) {
 	imgWithoutAlpha := image.NewNRGBA(image.Rect(0, 0, 4, 6))
 	imgWithoutAlpha.Pix = []uint8{
@@ -83,6 +116,7 @@ func TestOpenSave(t *testing.T) {
 	options := [][]EncodeOption{
 		{
 			JPEGQuality(100),
+			WebpLossless(true),
 		},
 		{
 			JPEGQuality(99),
@@ -90,6 +124,7 @@ func TestOpenSave(t *testing.T) {
 			GIFNumColors(256),
 			GIFQuantizer(quantizer{palette.Plan9}),
 			PNGCompressionLevel(png.BestSpeed),
+			WebpLossless(true),
 		},
 	}
 
@@ -99,7 +134,7 @@ func TestOpenSave(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	for _, ext := range []string{"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff"} {
+	for _, ext := range []string{"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "webp"} {
 		filename := filepath.Join(dir, "test."+ext)
 
 		img := imgWithoutAlpha
@@ -125,7 +160,7 @@ func TestOpenSave(t *testing.T) {
 			}
 
 			if !compareNRGBA(got, img, delta) {
-				t.Fatalf("bad encode-decode result (ext=%q): got %#v want %#v", ext, got, img)
+				t.Fatalf("bad encode-decode result (ext=%q): \ngot %#v \nwant %#v", ext, got, img)
 			}
 		}
 	}
@@ -180,6 +215,7 @@ func TestFormats(t *testing.T) {
 		GIF:        "GIF",
 		BMP:        "BMP",
 		TIFF:       "TIFF",
+		WEBP:       "WEBP",
 		Format(-1): "",
 	}
 	for format, name := range formatNames {

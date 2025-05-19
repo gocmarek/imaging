@@ -1,9 +1,20 @@
-# Imaging
+## This package is fork from [disintegration/imaging](https://github.com/disintegration/imaging) with added WebP support by implementing [chai2010/webp](https://github.com/chai2010/webp)
 
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/disintegration/imaging)](https://pkg.go.dev/github.com/disintegration/imaging)
-[![Build Status](https://travis-ci.org/disintegration/imaging.svg?branch=master)](https://travis-ci.org/disintegration/imaging)
-[![Coverage Status](https://coveralls.io/repos/github/disintegration/imaging/badge.svg?branch=master&service=github)](https://coveralls.io/github/disintegration/imaging?branch=master)
-[![Go Report Card](https://goreportcard.com/badge/github.com/disintegration/imaging)](https://goreportcard.com/report/github.com/disintegration/imaging)
+
+### Added options for Encode function
+
+| Option as Func | Dafault Value | Description |
+|----------------|---------------|----------|
+| WebpQuality(int) | 		 80 | 		webp encofing image quality |
+| saveAllAsWebp(bool) | 	false |  save PNG, JPG, TIFF, BMP as webp(file extention will be replaced)|
+| webpLossless(bool) | 	false | encode lossless |
+
+<br>
+<hr>
+<hr>
+<br>
+
+# Imaging
 
 Package imaging provides basic image processing functions (resize, rotate, crop, brightness/contrast adjustments, etc.).
 

@@ -1,3 +1,8 @@
-module github.com/disintegration/imaging
+module github.com/gocmarek/imaging
 
-require golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8
+go 1.24.2
+
+require (
+	github.com/chai2010/webp v1.4.0
+	golang.org/x/image v0.27.0
+)
