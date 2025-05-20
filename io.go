@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/HugoSmits86/nativewebp"
+	"github.com/gen2brain/webp"
 	"golang.org/x/image/bmp"
 	"golang.org/x/image/tiff"
 )
@@ -164,6 +164,10 @@ type encodeConfig struct {
 	gifDrawer           draw.Drawer
 	pngCompressionLevel png.CompressionLevel
 	saveAllAsWebp       bool
+	webpQuality         int
+	webpLossless        bool
+	webpExactRGB        bool
+	webpMethod          int
 }
 
 var defaultEncodeConfig = encodeConfig{
@@ -173,6 +177,10 @@ var defaultEncodeConfig = encodeConfig{
 	gifDrawer:           nil,
 	pngCompressionLevel: png.DefaultCompression,
 	saveAllAsWebp:       false,
+	webpQuality:         75,
+	webpLossless:        false,
+	webpExactRGB:        false,
+	webpMethod:          4,
 }
 
 // EncodeOption sets an optional parameter for the Encode and Save functions.
@@ -218,15 +226,44 @@ func PNGCompressionLevel(level png.CompressionLevel) EncodeOption {
 	}
 }
 
-/*
-	webpQuality         int
-	saveAllAsWebp       bool
-	webpLossless        bool
-*/
-
+// SaveAllAsWebp returns an EncodeOption that forces saving
+// all images as WebP format, regardless of the file extension.
 func SaveAllAsWebp(saveall bool) EncodeOption {
 	return func(c *encodeConfig) {
 		c.saveAllAsWebp = saveall
+	}
+}
+
+// WebpQuality returns an EncodeOption that sets the quality of the WebP-encoded image.
+// The quality ranges from 0 to 100 inclusive. 0 gives the lowest quality and 100
+// gives the highest quality. Default is 75.
+func WebpQuality(quality int) EncodeOption {
+	return func(c *encodeConfig) {
+		c.webpQuality = quality
+	}
+}
+
+// WebpMethod returns an EncodeOption that sets the WebP encoding method.
+// Method is quality/speed trade-off (0=fast, 6=slower-better). Default is 4.
+func webpMethod(method int) EncodeOption {
+	return func(c *encodeConfig) {
+		c.webpMethod = method
+	}
+}
+
+// WebpLossless returns an EncodeOption that sets the lossless mode of the WebP-encoded image.
+// If lossless is true, the image will be encoded losslessly. Default is false.
+func WebpLossless(lossless bool) EncodeOption {
+	return func(c *encodeConfig) {
+		c.webpLossless = lossless
+	}
+}
+
+// WebpExactRGB returns an EncodeOption that sets the exact RGB mode of the WebP-encoded image.
+// If exact is true, the image will be encoded with exact RGB mode. Default is false.
+func webpExactRGB(exact bool) EncodeOption {
+	return func(c *encodeConfig) {
+		c.webpExactRGB = exact
 	}
 }
 
@@ -246,7 +283,7 @@ func Encode(w io.Writer, img image.Image, format Format, opts ...EncodeOption) e
 				Rect:   nrgba.Rect,
 			}
 			if cfg.saveAllAsWebp {
-				return nativewebp.Encode(w, img, nil)
+				return webp.Encode(w, img, webp.Options{Quality: cfg.webpQuality, Lossless: cfg.webpLossless, Exact: cfg.webpExactRGB, Method: cfg.webpMethod})
 			}
 			return jpeg.Encode(w, rgba, &jpeg.Options{Quality: cfg.jpegQuality})
 		}
@@ -255,7 +292,7 @@ func Encode(w io.Writer, img image.Image, format Format, opts ...EncodeOption) e
 	case PNG:
 		encoder := png.Encoder{CompressionLevel: cfg.pngCompressionLevel}
 		if cfg.saveAllAsWebp {
-			return nativewebp.Encode(w, img, nil)
+			return webp.Encode(w, img, webp.Options{Quality: cfg.webpQuality, Lossless: cfg.webpLossless, Exact: cfg.webpExactRGB, Method: cfg.webpMethod})
 		}
 		return encoder.Encode(w, img)
 
@@ -268,17 +305,17 @@ func Encode(w io.Writer, img image.Image, format Format, opts ...EncodeOption) e
 
 	case TIFF:
 		if cfg.saveAllAsWebp {
-			return nativewebp.Encode(w, img, nil)
+			return webp.Encode(w, img, webp.Options{Quality: cfg.webpQuality, Lossless: cfg.webpLossless, Exact: cfg.webpExactRGB, Method: cfg.webpMethod})
 		}
 		return tiff.Encode(w, img, &tiff.Options{Compression: tiff.Deflate, Predictor: true})
 
 	case BMP:
 		if cfg.saveAllAsWebp {
-			return nativewebp.Encode(w, img, nil)
+			return webp.Encode(w, img, webp.Options{Quality: cfg.webpQuality, Lossless: cfg.webpLossless, Exact: cfg.webpExactRGB, Method: cfg.webpMethod})
 		}
 		return bmp.Encode(w, img)
 	case WEBP:
-		return nativewebp.Encode(w, img, nil)
+		return webp.Encode(w, img, webp.Options{Quality: cfg.webpQuality, Lossless: cfg.webpLossless, Exact: cfg.webpExactRGB, Method: cfg.webpMethod})
 	}
 
 	return ErrUnsupportedFormat
