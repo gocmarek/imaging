@@ -1,3 +1,6 @@
+//go:build s390x || ppc64le
+// +build s390x ppc64le
+
 package imaging
 
 import (

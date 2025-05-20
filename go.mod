@@ -3,6 +3,7 @@ module github.com/gocmarek/imaging
 go 1.24.2
 
 require (
+	github.com/HugoSmits86/nativewebp v1.2.0
 	github.com/gen2brain/webp v0.5.4
 	golang.org/x/image v0.27.0
 )
