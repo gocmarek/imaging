@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/chai2010/webp"
+	"github.com/HugoSmits86/nativewebp"
 	"golang.org/x/image/bmp"
 	"golang.org/x/image/tiff"
 )
@@ -163,9 +163,7 @@ type encodeConfig struct {
 	gifQuantizer        draw.Quantizer
 	gifDrawer           draw.Drawer
 	pngCompressionLevel png.CompressionLevel
-	webpQuality         int
 	saveAllAsWebp       bool
-	webpLossless        bool
 }
 
 var defaultEncodeConfig = encodeConfig{
@@ -174,9 +172,7 @@ var defaultEncodeConfig = encodeConfig{
 	gifQuantizer:        nil,
 	gifDrawer:           nil,
 	pngCompressionLevel: png.DefaultCompression,
-	webpQuality:         80,
 	saveAllAsWebp:       false,
-	webpLossless:        false,
 }
 
 // EncodeOption sets an optional parameter for the Encode and Save functions.
@@ -228,21 +224,9 @@ func PNGCompressionLevel(level png.CompressionLevel) EncodeOption {
 	webpLossless        bool
 */
 
-func WebpQuality(level int) EncodeOption {
-	return func(c *encodeConfig) {
-		c.webpQuality = level
-	}
-}
-
 func SaveAllAsWebp(saveall bool) EncodeOption {
 	return func(c *encodeConfig) {
 		c.saveAllAsWebp = saveall
-	}
-}
-
-func WebpLossless(lossless bool) EncodeOption {
-	return func(c *encodeConfig) {
-		c.webpLossless = lossless
 	}
 }
 
@@ -262,7 +246,7 @@ func Encode(w io.Writer, img image.Image, format Format, opts ...EncodeOption) e
 				Rect:   nrgba.Rect,
 			}
 			if cfg.saveAllAsWebp {
-				return webp.Encode(w, img, &webp.Options{Quality: float32(cfg.webpQuality), Lossless: cfg.webpLossless})
+				return nativewebp.Encode(w, img, nil)
 			}
 			return jpeg.Encode(w, rgba, &jpeg.Options{Quality: cfg.jpegQuality})
 		}
@@ -271,7 +255,7 @@ func Encode(w io.Writer, img image.Image, format Format, opts ...EncodeOption) e
 	case PNG:
 		encoder := png.Encoder{CompressionLevel: cfg.pngCompressionLevel}
 		if cfg.saveAllAsWebp {
-			return webp.Encode(w, img, &webp.Options{Quality: float32(cfg.webpQuality), Lossless: cfg.webpLossless})
+			return nativewebp.Encode(w, img, nil)
 		}
 		return encoder.Encode(w, img)
 
@@ -284,17 +268,17 @@ func Encode(w io.Writer, img image.Image, format Format, opts ...EncodeOption) e
 
 	case TIFF:
 		if cfg.saveAllAsWebp {
-			return webp.Encode(w, img, &webp.Options{Quality: float32(cfg.webpQuality), Lossless: cfg.webpLossless})
+			return nativewebp.Encode(w, img, nil)
 		}
 		return tiff.Encode(w, img, &tiff.Options{Compression: tiff.Deflate, Predictor: true})
 
 	case BMP:
 		if cfg.saveAllAsWebp {
-			return webp.Encode(w, img, &webp.Options{Quality: float32(cfg.webpQuality), Lossless: cfg.webpLossless})
+			return nativewebp.Encode(w, img, nil)
 		}
 		return bmp.Encode(w, img)
 	case WEBP:
-		return webp.Encode(w, img, &webp.Options{Quality: float32(cfg.webpQuality), Lossless: cfg.webpLossless})
+		return nativewebp.Encode(w, img, nil)
 	}
 
 	return ErrUnsupportedFormat

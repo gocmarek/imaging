@@ -116,7 +116,6 @@ func TestOpenSave(t *testing.T) {
 	options := [][]EncodeOption{
 		{
 			JPEGQuality(100),
-			WebpLossless(true),
 		},
 		{
 			JPEGQuality(99),
@@ -124,7 +123,6 @@ func TestOpenSave(t *testing.T) {
 			GIFNumColors(256),
 			GIFQuantizer(quantizer{palette.Plan9}),
 			PNGCompressionLevel(png.BestSpeed),
-			WebpLossless(true),
 		},
 	}
 
