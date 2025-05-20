@@ -1,5 +1,5 @@
-//go:build s390x || ppc64le || armv7
-// +build s390x ppc64le armv7
+//go:build s390x || ppc64le || arm
+// +build s390x ppc64le arm
 
 package imaging
 
